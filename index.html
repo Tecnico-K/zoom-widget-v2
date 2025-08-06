@@ -59,74 +59,66 @@ Debes incluir estas librerías en este orden, _antes_ de tu propio código de in
 <body>
   <div id="zoomContainer"></div>
   <button id="enterFs" class="zoom-btn">🖥️ Entrar pantalla completa</button>
-  <button id="exitFs"  class="zoom-btn">❌ Salir pantalla completa</button>
+  <button id="exitFs" class="zoom-btn">❌ Salir pantalla completa</button>
 
   <script>
-    // --- 1. Configuración de la reunión ---
-    const meetConfig = {
-      sdkKey:        'I4k75wP6QKWINI3BA9Cw2Q',
-      meetingNumber: '81257280554',
-      userName:      'Participante',
-      passWord:      '614173',
-      role:          0,
-      leaveUrl:      window.location.href
-    };
-
-    // --- 2. Preparar el SDK ---
+    // Preparación del SDK
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.14.0/lib', '/av');
     ZoomMtg.preLoadWasm();
-    ZoomMtg.prepareWebSDK();
+    ZoomMtg.prepareWebSDK(); // o prepareJssdk() según versión :contentReference[oaicite:6]{index=6}
 
-    // --- 3. Solicitar firma JWT al backend ---
+    const meetConfig = {
+      apiKey: 'I4k75wP6QKWINI3BA9Cw2Q',
+      meetingNumber: '84741182849',
+      userName: 'Participante',
+      passWord: '',
+      role: 0,
+      leaveUrl: window.location.href
+    };
+
+    // Obtener signature desde tu backend
     fetch('https://f4694874-9d0f-4ec8-bca7-9a78ceab281f-00-13svxwdokjyyl.riker.replit.dev/signature', {
-      method:  'POST',
-      headers: { 'Content-Type':'application/json' },
-      body:    JSON.stringify({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         meetingNumber: meetConfig.meetingNumber,
-        role:          meetConfig.role
+        role: meetConfig.role
       })
     })
-    .then(r => r.json())
+    .then(res => res.json())
     .then(({ signature }) => {
-      // --- 4. Inicializar e ingresar a la reunión ---
       ZoomMtg.init({
-        leaveUrl:     meetConfig.leaveUrl,
-        disableCORP:  true,          // desactiva aislamiento para que los botones respondan
-        patchJsMedia: true,          // corrige fallos de audio/video en entornos estáticos
-        webEndpoint:  'zoom.us',     // dominio Zoom para la conexión
-        isSupportAV:  true,
+        leaveUrl: meetConfig.leaveUrl,
+        isSupportAV: true,
         success: () => {
           console.log('✅ init success');
           ZoomMtg.join({
             signature,
-            sdkKey:        meetConfig.sdkKey,
+            sdkKey: meetConfig.apiKey,
             meetingNumber: meetConfig.meetingNumber,
-            userName:      meetConfig.userName,
-            passWord:      meetConfig.passWord,
+            userName: meetConfig.userName,
+            passWord: meetConfig.passWord,
             success: () => console.log('✅ join success'),
-            error:   err => console.error('❌ join error', err)
+            error: (err) => console.error('❌ join error', err)
           });
         },
-        error: err => console.error('❌ init error', err)
+        error: (err) => console.error('❌ init error', err)
       });
     })
-    .catch(err => console.error('❌ fetch signature error', err));
+    .catch(console.error);
 
-    // --- 5. Botones de pantalla completa ---
+    // Botones de fullscreen
     const container = document.getElementById('zoomContainer'),
           btnEnter  = document.getElementById('enterFs'),
           btnExit   = document.getElementById('exitFs');
-
     btnEnter.onclick = () =>
       container.requestFullscreen?.() ||
       container.webkitRequestFullscreen?.() ||
       container.msRequestFullscreen?.();
-
     btnExit.onclick = () =>
       document.exitFullscreen?.() ||
       document.webkitExitFullscreen?.() ||
       document.msExitFullscreen?.();
-
     document.addEventListener('fullscreenchange', () => {
       const inFs = document.fullscreenElement === container;
       btnEnter.style.display = inFs ? 'none' : 'block';
