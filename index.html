@@ -90,6 +90,7 @@ Debes incluir estas librerías en este orden, _antes_ de tu propio código de in
     .then(({ signature }) => {
       ZoomMtg.init({
         leaveUrl: meetConfig.leaveUrl,
+        disableCORP: true,
         isSupportAV: true,
         success: () => {
           console.log('✅ init success');
