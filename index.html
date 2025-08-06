@@ -30,18 +30,18 @@ Debes incluir estas librerías en este orden, _antes_ de tu propio código de in
   <meta charset="UTF-8" />
   <title>Zoom en tu comunidad</title>
 
-  <!-- 1. CSS del SDK -->
+  <!-- 1. CSS del SDK (no tocar) -->
   <link rel="stylesheet" href="https://source.zoom.us/2.14.0/css/bootstrap.css" />
   <link rel="stylesheet" href="https://source.zoom.us/2.14.0/css/react-select.css" />
 
-  <!-- 2. Dependencias (orden crítico) -->
-  <script src="https://source.zoom.us/2.14.0/lib/vendor/react.min.js"></script>
-  <script src="https://source.zoom.us/2.14.0/lib/vendor/react-dom.min.js"></script>
-  <script src="https://source.zoom.us/2.14.0/lib/vendor/redux.min.js"></script>
-  <script src="https://source.zoom.us/2.14.0/lib/vendor/redux-thunk.min.js"></script>
-  <script src="https://source.zoom.us/2.14.0/lib/vendor/lodash.min.js"></script>
+  <!-- 2. Dependencias globales (orden crítico; no eliminar) -->
+  <script src="https://source.zoom.us/2.14.0/lib/vendor/react.min.js"></script>  
+  <script src="https://source.zoom.us/2.14.0/lib/vendor/react-dom.min.js"></script>  
+  <script src="https://source.zoom.us/2.14.0/lib/vendor/redux.min.js"></script>  
+  <script src="https://source.zoom.us/2.14.0/lib/vendor/redux-thunk.min.js"></script>  
+  <script src="https://source.zoom.us/2.14.0/lib/vendor/lodash.min.js"></script> <!-- Lodash: _ must exist :contentReference[oaicite:3]{index=3} -->
 
-  <!-- 3. SDK principal -->
+  <!-- 3. SDK principal (no eliminar) -->
   <script src="https://source.zoom.us/2.14.0/zoom-meeting-2.14.0.min.js"></script>
 
   <style>
@@ -62,54 +62,57 @@ Debes incluir estas librerías en este orden, _antes_ de tu propio código de in
   <button id="exitFs" class="zoom-btn">❌ Salir pantalla completa</button>
 
   <script>
-    // Preparación del SDK
-    ZoomMtg.setZoomJSLib('https://source.zoom.us/2.14.0/lib', '/av');
-    ZoomMtg.preLoadWasm();
-    ZoomMtg.prepareWebSDK(); // o prepareJssdk() según versión :contentReference[oaicite:6]{index=6}
-
+    // --- 1. Configuración de la reunión ---
     const meetConfig = {
-      appKey: 'I4k75wP6QKWINI3BA9Cw2Q',
-      sdkKey: 'I4k75wP6QKWINI3BA9Cw2Q',
+      sdkKey:    'I4k75wP6QKWINI3BA9Cw2Q', // tu SDK Key (Client ID)
       meetingNumber: '81257280554',
-      userName: 'Participante',
-      passWord: '614173',
-      role: 0,
-      leaveUrl: window.location.href
+      userName:      'Participante',
+      passWord:      '614173',             // contraseña de la reunión
+      role:          0,                    // 0 = participante
+      leaveUrl:      window.location.href
     };
 
-    // Obtener signature desde tu backend
+    // --- 2. Preparar el SDK ---
+    ZoomMtg.setZoomJSLib('https://source.zoom.us/2.14.0/lib', '/av');  // rutas de WASM/CND
+    ZoomMtg.preLoadWasm();                                           // carga módulos WASM
+    ZoomMtg.prepareWebSDK();                                        // prepara el entorno
+
+    // --- 3. Solicitar firma JWT al backend (Replit) ---
     fetch('https://f4694874-9d0f-4ec8-bca7-9a78ceab281f-00-13svxwdokjyyl.riker.replit.dev/signature', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      method:  'POST',
+      headers: { 'Content-Type':'application/json' },
+      body:    JSON.stringify({
         meetingNumber: meetConfig.meetingNumber,
-        role: meetConfig.role
+        role:          meetConfig.role
       })
     })
-    .then(res => res.json())
+    .then(r => r.json())
     .then(({ signature }) => {
+      // --- 4. Inicializar y unir a la reunión ---
       ZoomMtg.init({
         leaveUrl: meetConfig.leaveUrl,
-        disableCORP: true,
+        disableCORP: true,     // desactiva “web isolation” para habilitar eventos :contentReference[oaicite:4]{index=4}
+        patchJsMedia: true,    // aplica correcciones automáticas de medios :contentReference[oaicite:5]{index=5}
+        webEndpoint: 'zoom.us',// dominio de Zoom para conexión :contentReference[oaicite:6]{index=6}
         isSupportAV: true,
         success: () => {
           console.log('✅ init success');
           ZoomMtg.join({
             signature,
-            sdkKey: meetConfig.apiKey,
+            sdkKey:        meetConfig.sdkKey,         // tu SDK Key
             meetingNumber: meetConfig.meetingNumber,
-            userName: meetConfig.userName,
-            passWord: meetConfig.passWord,
+            userName:      meetConfig.userName,
+            passWord:      meetConfig.passWord,
             success: () => console.log('✅ join success'),
-            error: (err) => console.error('❌ join error', err)
+            error:   err => console.error('❌ join error', err)
           });
         },
-        error: (err) => console.error('❌ init error', err)
+        error: err => console.error('❌ init error', err)
       });
     })
-    .catch(console.error);
+    .catch(err => console.error('❌ fetch signature error', err));
 
-    // Botones de fullscreen
+    // --- 5. Botones de pantalla completa (opcional) ---
     const container = document.getElementById('zoomContainer'),
           btnEnter  = document.getElementById('enterFs'),
           btnExit   = document.getElementById('exitFs');
@@ -124,7 +127,7 @@ Debes incluir estas librerías en este orden, _antes_ de tu propio código de in
     document.addEventListener('fullscreenchange', () => {
       const inFs = document.fullscreenElement === container;
       btnEnter.style.display = inFs ? 'none' : 'block';
-      btnExit.style.display = inFs ? 'block' : 'none';
+      btnExit .style.display = inFs ? 'block' : 'none';
     });
   </script>
 </body>
