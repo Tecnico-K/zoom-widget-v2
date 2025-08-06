@@ -91,17 +91,18 @@ Debes incluir estas librerías en este orden, _antes_ de tu propio código de in
         leaveUrl: meetConfig.leaveUrl,
         isSupportAV: true,
         success: () => {
+          console.log('✅ init success');
           ZoomMtg.join({
             signature,
             sdkKey: meetConfig.apiKey,
             meetingNumber: meetConfig.meetingNumber,
             userName: meetConfig.userName,
             passWord: meetConfig.passWord,
-            success: () => console.log('Unido a Zoom'),
-            error: e => console.error(e)
+            success: () => console.log('✅ join success'),
+            error: (err) => console.error('❌ join error', err)
           });
         },
-        error: e => console.error(e)
+        error: (err) => console.error('❌ init error', err)
       });
     })
     .catch(console.error);
