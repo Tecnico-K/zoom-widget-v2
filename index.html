@@ -1,14 +1,40 @@
+<link rel="stylesheet" href="https://source.zoom.us/2.14.0/css/bootstrap.css" />
+<link rel="stylesheet" href="https://source.zoom.us/2.14.0/css/react-select.css" />
+``` :contentReference[oaicite:4]{index=4}
+
+### 2.2 Scripts en el `<head>` (orden crítico)  
+Debes incluir estas librerías en este orden, _antes_ de tu propio código de inicialización:
+```html
+<!-- 1. React -->
+<script src="https://source.zoom.us/2.14.0/lib/vendor/react.min.js"></script>  
+<!-- 2. ReactDOM -->
+<script src="https://source.zoom.us/2.14.0/lib/vendor/react-dom.min.js"></script>  
+<!-- 3. Redux -->
+<script src="https://source.zoom.us/2.14.0/lib/vendor/redux.min.js"></script>  
+<!-- 4. Redux-Thunk -->
+<script src="https://source.zoom.us/2.14.0/lib/vendor/redux-thunk.min.js"></script>  
+<!-- 5. Lodash -->
+<script src="https://source.zoom.us/2.14.0/lib/vendor/lodash.min.js"></script>  
+<!-- 6. SDK principal -->
+<script src="https://source.zoom.us/2.14.0/zoom-meeting-2.14.0.min.js"></script>
+``` :contentReference[oaicite:5]{index=5}
+
+---
+
+## 3. `index.html` completo corregido
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <title>Zoom en tu comunidad</title>
 
-  <!-- 1. CSS del Zoom Meeting SDK -->
+  <!-- 1. CSS del SDK -->
   <link rel="stylesheet" href="https://source.zoom.us/2.14.0/css/bootstrap.css" />
   <link rel="stylesheet" href="https://source.zoom.us/2.14.0/css/react-select.css" />
 
-  <!-- 2. Dependencias del SDK (orden crítico!) -->
+  <!-- 2. Dependencias (orden crítico) -->
   <script src="https://source.zoom.us/2.14.0/lib/vendor/react.min.js"></script>
   <script src="https://source.zoom.us/2.14.0/lib/vendor/react-dom.min.js"></script>
   <script src="https://source.zoom.us/2.14.0/lib/vendor/redux.min.js"></script>
@@ -22,15 +48,9 @@
     html, body { margin:0; padding:0; height:100%; }
     #zoomContainer { position:relative; width:100%; height:100%; }
     .zoom-btn {
-      position:absolute;
-      top:8px;
-      padding:0.5rem 1rem;
-      border:none;
-      border-radius:4px;
-      background:rgba(0,0,0,0.6);
-      color:white;
-      cursor:pointer;
-      z-index:10;
+      position:absolute; top:8px; padding:0.5rem 1rem;
+      border:none; border-radius:4px; background:rgba(0,0,0,0.6);
+      color:white; cursor:pointer; z-index:10;
     }
     #enterFs { right:8px; }
     #exitFs  { right:8px; display:none; }
@@ -42,12 +62,11 @@
   <button id="exitFs" class="zoom-btn">❌ Salir pantalla completa</button>
 
   <script>
-    // 1. Preparar el SDK
+    // Preparación del SDK
     ZoomMtg.setZoomJSLib('https://source.zoom.us/2.14.0/lib', '/av');
     ZoomMtg.preLoadWasm();
-    ZoomMtg.prepareWebSDK();
+    ZoomMtg.prepareWebSDK(); // o prepareJssdk() según versión :contentReference[oaicite:6]{index=6}
 
-    // 2. Configuración de la reunión
     const meetConfig = {
       apiKey: 'I4k75wP6QKWINI3BA9Cw2Q',
       meetingNumber: '84741182849',
@@ -57,8 +76,8 @@
       leaveUrl: window.location.href
     };
 
-    // 3. Obtener la firma JWT desde tu backend
-    fetch('https://f4694874-9d0f-4ec8-bca7-9a78ceab281f-00-13svxwdokjyyl.riker.replit.dev/signature', {
+    // Obtener signature desde tu backend
+    fetch('https://<tu-backend>/signature', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,7 +87,6 @@
     })
     .then(res => res.json())
     .then(({ signature }) => {
-      // 4. Inicializar e ingresar a la reunión
       ZoomMtg.init({
         leaveUrl: meetConfig.leaveUrl,
         isSupportAV: true,
@@ -80,29 +98,26 @@
             userName: meetConfig.userName,
             passWord: meetConfig.passWord,
             success: () => console.log('Unido a Zoom'),
-            error: (e) => console.error(e)
+            error: e => console.error(e)
           });
         },
-        error: (e) => console.error(e)
+        error: e => console.error(e)
       });
     })
     .catch(console.error);
 
-    // 5. Botones de pantalla completa
+    // Botones de fullscreen
     const container = document.getElementById('zoomContainer'),
           btnEnter  = document.getElementById('enterFs'),
           btnExit   = document.getElementById('exitFs');
-
     btnEnter.onclick = () =>
       container.requestFullscreen?.() ||
       container.webkitRequestFullscreen?.() ||
       container.msRequestFullscreen?.();
-
     btnExit.onclick = () =>
       document.exitFullscreen?.() ||
       document.webkitExitFullscreen?.() ||
       document.msExitFullscreen?.();
-
     document.addEventListener('fullscreenchange', () => {
       const inFs = document.fullscreenElement === container;
       btnEnter.style.display = inFs ? 'none' : 'block';
